@@ -1,5 +1,5 @@
 name:                simple-couch
-version:             0.1.0
+version:             0.1.1
 synopsis:            Simple utility lib for talking to CouchDB
 description:         Simple utility lib for talking to CouchDB
 homepage:            https://github.com/ralphmorton/simple-couch#readme

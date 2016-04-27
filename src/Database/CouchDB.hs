@@ -13,7 +13,9 @@ module Database.CouchDB(
     getMany,
     getMaybe,
     create,
+    createMany,
     update,
+    updateMany,
     delete
 ) where
 
@@ -89,6 +91,12 @@ create e = do
     let e' = set entityID uuid e
     update e'
 
+-- |Create multiple docs
+createMany :: (MonadReader r m, MonadError e m, HasCouchCfg r, HasHttpCfg r, AsHttpError e, MonadIO m, Entity a) => [a] -> m ()
+createMany ents = do
+    uuids <- uuids (length ents)
+    updateMany . fmap (uncurry $ set entityID) $ zip uuids ents
+
 -- |Update a document. Can be used to create a document if a specific _id is required
 update :: (MonadReader r m, MonadError e m, HasCouchCfg r, HasHttpCfg r, AsHttpError e, MonadIO m, Entity a) => a -> m a
 update e = do
@@ -96,6 +104,13 @@ update e = do
     req <- buildReq PUT url (mkJSONData e)
     (CouchUpdateResult rev) <- httpJSON req
     return $ e & entityRev .~ (Just rev)
+
+-- |Update multiple docs
+updateMany :: (MonadReader r m, MonadError e m, HasCouchCfg r, HasHttpCfg r, AsHttpError e, MonadIO m, Entity a) => [a] -> m ()
+updateMany ents = do
+    url <- return . (++"_bulk_docs") =<< dbURL
+    req <- buildReq POST url $ mkJSONData (object ["docs" .= ents])
+    http' $ addHeaders [("Content-Type", "application/json")] req
 
 -- |Delete a doc with given ID and Rev
 delete :: (MonadReader r m, MonadError e m, HasCouchCfg r, HasHttpCfg r, AsHttpError e, MonadIO m) => String -> String -> m ()
