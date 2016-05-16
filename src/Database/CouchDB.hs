@@ -5,6 +5,7 @@ module Database.CouchDB(
     Database.CouchDB.Types.CouchCfg(..),
     Database.CouchDB.Types.HasCouchCfg(..),
     Database.CouchDB.Types.Entity(..),
+    Database.CouchDB.Types.Key,
     Database.CouchDB.Types.KeySpec(..),
     uuids,
     view,
@@ -16,7 +17,8 @@ module Database.CouchDB(
     createMany,
     update,
     updateMany,
-    delete
+    delete,
+    mkKey
 ) where
 
 import Database.CouchDB.Types
@@ -119,6 +121,9 @@ delete eid rev = do
     req <- buildReq DELETE url NoRequestData
     http' req
 
+mkKey :: Keyable k => k -> Key
+mkKey = Key
+
 ---
 ---
 ---
@@ -144,9 +149,9 @@ viewURL docName viewName ks = do
 
 keyStr :: KeySpec -> String
 keyStr NoKey = ""
-keyStr (Key s) = "?key=" ++ s
-keyStr (KeyRange s e) = "?startkey=" ++ s ++ "&endkey=" ++ e
-keyStr (Keys sx group)
+keyStr (SingleKey k) = "?key=" ++ toKey k
+keyStr (KeyRange sk ek) = "?startkey=" ++ toKey sk ++ "&endkey=" ++ toKey ek
+keyStr (Keys kx group)
     | group = base ++"&group=true"
     | otherwise = base
-    where base = "?keys=%5B" ++ (concat $ intersperse "," sx) ++ "%5D"
+    where base = "?keys=%5B" ++ (concat . intersperse "," $ fmap toKey kx) ++ "%5D"
